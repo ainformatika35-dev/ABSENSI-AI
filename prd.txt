@@ -1,0 +1,640 @@
+Buatkan aplikasi web **Absensi AI berbasis deteksi/pengenalan wajah** untuk lingkungan sekolah menggunakan Python sebagai backend dan Firebase sebagai database realtime.
+
+## 1. Nama dan tujuan aplikasi
+
+Nama aplikasi: **ABSENSI-AI**
+
+Project Firebase:
+
+* Project Name: ABSENSI-AI
+* Project ID: absensi-ai-6cced
+* Project Number: 822149982282
+* Firebase Hosting Site: absensi-ai-6cced
+
+Aplikasi digunakan untuk melakukan absensi siswa menggunakan kamera/webcam dan AI pengenalan wajah. Sistem memiliki 2 role:
+
+1. **Siswa**
+2. **Admin**
+
+Fitur utama aplikasi:
+
+* Absensi
+* Laporan
+
+Buat aplikasi dengan desain modern, bersih, responsif, dan cocok digunakan pada komputer/laptop sekolah.
+
+---
+
+# 2. Teknologi yang digunakan
+
+Gunakan:
+
+### Backend
+
+* Python
+* Flask
+* Firebase Admin SDK
+* OpenCV
+* Library pengenalan wajah/face embedding yang kompatibel dengan Python
+* REST API jika diperlukan
+
+### Frontend
+
+* HTML5
+* CSS3
+* JavaScript
+* Bootstrap atau Tailwind CSS jika diperlukan
+* Webcam menggunakan browser camera API
+
+### Database
+
+Gunakan **Firebase Realtime Database** sebagai database utama.
+
+### Authentication
+
+Gunakan Firebase Authentication atau sistem authentication yang aman dengan role siswa/admin.
+
+Jangan menyimpan password secara plaintext.
+
+---
+
+# 3. Firebase Configuration
+
+Gunakan konfigurasi Firebase Web berikut:
+
+```javascript
+const firebaseConfig = {
+  apiKey: "AIzaSyA4-L0W2ecqPH3T5gh3j7diNUbx1RrMfyY",
+  authDomain: "absensi-ai-6cced.firebaseapp.com",
+  projectId: "absensi-ai-6cced",
+  storageBucket: "absensi-ai-6cced.firebasestorage.app",
+  messagingSenderId: "822149982282",
+  appId: "1:822149982282:web:bf27020e110e5273dedeb3",
+  measurementId: "G-GL0WEQZEC4"
+};
+```
+
+Gunakan Firebase Modular SDK untuk frontend.
+
+Untuk backend Python, gunakan Firebase Admin SDK.
+
+**PENTING:**
+Jangan pernah memasukkan Firebase service account private key ke frontend atau GitHub. Gunakan environment variable atau file `.env` untuk credential backend.
+
+---
+
+# 4. Struktur role
+
+## Role Siswa
+
+Siswa hanya dapat:
+
+* Login
+* Melihat dashboard
+* Melakukan absensi menggunakan kamera
+* Melihat status absensi dirinya
+* Melihat riwayat absensi dirinya
+* Melihat tanggal, jam, dan status kehadiran
+
+Siswa tidak boleh:
+
+* Mengubah data absensi
+* Menghapus absensi
+* Melihat data siswa lain
+* Mengakses halaman admin
+
+---
+
+# 5. Role Admin
+
+Admin memiliki akses:
+
+* Dashboard admin
+* Mengelola data siswa
+* Mendaftarkan wajah siswa
+* Melakukan pengujian kamera
+* Melihat seluruh data absensi
+* Melihat laporan
+* Filter laporan berdasarkan:
+
+  * tanggal
+  * bulan
+  * tahun
+  * nama siswa
+  * kelas
+  * status kehadiran
+* Export laporan ke CSV/Excel
+* Melihat statistik kehadiran
+
+Admin dapat:
+
+* Tambah siswa
+* Edit siswa
+* Hapus/nonaktifkan siswa
+* Reset data wajah siswa
+* Melihat detail siswa
+
+---
+
+# 6. Sistem pengenalan wajah
+
+Buat sistem pengenalan wajah menggunakan Python.
+
+Alur:
+
+1. Siswa membuka halaman absensi.
+2. Browser meminta izin kamera.
+3. Kamera menampilkan video secara realtime.
+4. Sistem mendeteksi wajah.
+5. Sistem mengambil frame wajah yang jelas.
+6. Backend Python melakukan proses face recognition.
+7. Sistem mencocokkan wajah dengan data wajah siswa yang sudah terdaftar.
+8. Jika cocok:
+
+   * tampilkan nama siswa
+   * tampilkan kelas
+   * tampilkan status berhasil
+   * simpan absensi ke Firebase Realtime Database
+9. Jika tidak cocok:
+
+   * tampilkan pesan "Wajah tidak dikenali".
+10. Jika siswa sudah melakukan absensi pada hari tersebut, jangan membuat absensi duplikat.
+
+Gunakan threshold similarity/distance yang dapat dikonfigurasi melalui `.env` atau file konfigurasi.
+
+Jangan hanya mengandalkan nama yang dikirim dari frontend. Identitas siswa harus ditentukan dari hasil pengenalan wajah di backend.
+
+---
+
+# 7. Pendaftaran wajah siswa
+
+Admin mempunyai halaman:
+
+**Data Siswa → Daftar Wajah**
+
+Form:
+
+* NIS
+* Nama
+* Kelas
+* Jenis kelamin jika memang diperlukan
+* Foto wajah
+
+Lebih baik menyediakan beberapa sampel foto wajah untuk setiap siswa agar recognition lebih stabil.
+
+Contoh:
+
+```text
+Siswa
+ ├── NIS
+ ├── Nama
+ ├── Kelas
+ └── Face Embeddings
+       ├── embedding_1
+       ├── embedding_2
+       └── embedding_3
+```
+
+Jangan menyimpan foto wajah mentah jika tidak diperlukan. Prioritaskan penyimpanan face embedding yang diperlukan untuk recognition.
+
+Tambahkan validasi agar foto harus memiliki wajah yang jelas.
+
+---
+
+# 8. Struktur Firebase Realtime Database
+
+Gunakan struktur database yang terorganisir seperti:
+
+```json
+{
+  "users": {
+    "USER_ID": {
+      "uid": "USER_ID",
+      "nis": "12345",
+      "nama": "Nama Siswa",
+      "kelas": "XI IPS 1",
+      "role": "siswa",
+      "status": "active",
+      "createdAt": "timestamp"
+    }
+  },
+
+  "face_data": {
+    "USER_ID": {
+      "embeddings": {
+        "embedding1": [],
+        "embedding2": [],
+        "embedding3": []
+      },
+      "updatedAt": "timestamp"
+    }
+  },
+
+  "attendance": {
+    "2026-09-25": {
+      "USER_ID": {
+        "userId": "USER_ID",
+        "nis": "12345",
+        "nama": "Nama Siswa",
+        "kelas": "XI IPS 1",
+        "tanggal": "2026-09-25",
+        "jam": "07:15:23",
+        "status": "hadir",
+        "method": "face_recognition"
+      }
+    }
+  }
+}
+```
+
+Gunakan struktur yang efisien untuk query berdasarkan tanggal dan siswa.
+
+---
+
+# 9. Aturan absensi
+
+Default status:
+
+* Hadir
+* Terlambat
+* Izin
+* Sakit
+* Alpa
+
+Untuk absensi menggunakan wajah:
+
+Jika waktu absensi sebelum batas tertentu:
+`Hadir`
+
+Jika melewati batas:
+`Terlambat`
+
+Buat batas waktu dapat diubah oleh admin melalui konfigurasi.
+
+Contoh:
+
+```text
+Jam masuk sekolah: 07:00
+Batas hadir: 07:15
+
+<= 07:15  → Hadir
+> 07:15   → Terlambat
+```
+
+Jangan membuat absensi ganda untuk siswa yang sama pada tanggal yang sama.
+
+---
+
+# 10. Dashboard siswa
+
+Buat dashboard sederhana:
+
+```text
+ABSENSI-AI
+
+Halo, [Nama Siswa]
+
+┌──────────────────────────┐
+│ Status Hari Ini          │
+│ ✓ HADIR                  │
+│ 07:12:31                 │
+└──────────────────────────┘
+
+[ ABSENSI SEKARANG ]
+
+Riwayat Absensi
+--------------------------------
+Tanggal     Jam       Status
+25/09/2026  07:12     Hadir
+24/09/2026  07:18     Terlambat
+23/09/2026  -         Izin
+```
+
+---
+
+# 11. Dashboard admin
+
+Dashboard admin menampilkan statistik:
+
+```text
+Dashboard Admin
+
+Total Siswa       : 320
+Hadir Hari Ini    : 285
+Terlambat         : 20
+Izin              : 10
+Alpa              : 5
+```
+
+Tambahkan grafik:
+
+* Kehadiran harian
+* Hadir vs terlambat
+* Rekap per kelas
+
+Gunakan chart library seperti Chart.js jika diperlukan.
+
+---
+
+# 12. Halaman laporan
+
+Buat halaman:
+
+**Laporan Absensi**
+
+Filter:
+
+```text
+Tanggal mulai
+Tanggal akhir
+Kelas
+Nama siswa
+Status
+```
+
+Tabel:
+
+```text
+No | NIS | Nama | Kelas | Tanggal | Jam | Status
+1  | ... | ...  | XI... | ...     | ... | Hadir
+```
+
+Tambahkan tombol:
+
+* Filter
+* Reset
+* Export CSV
+* Export Excel
+
+Laporan harus mengambil data langsung dari Firebase Realtime Database.
+
+---
+
+# 13. UI/UX
+
+Gunakan desain:
+
+* Modern
+* Minimalis
+* Responsive
+* Sidebar untuk admin
+* Navbar sederhana
+* Card statistik
+* Tabel responsive
+* Modal untuk form
+* Toast notification
+* Loading indicator
+* Error notification
+
+Warna utama boleh menggunakan kombinasi biru/putih yang cocok untuk aplikasi sekolah.
+
+Nama aplikasi di navbar:
+
+**ABSENSI-AI**
+
+Tambahkan icon yang relevan.
+
+---
+
+# 14. Keamanan
+
+Terapkan:
+
+* Authentication
+* Role-based access control
+* Firebase Realtime Database Security Rules
+* Validasi input
+* Jangan percaya role yang dikirim dari frontend
+* Admin hanya dapat mengakses endpoint admin
+* Siswa hanya dapat membaca data absensinya sendiri
+* Service account Firebase hanya berada di backend
+* Jangan memasukkan credential rahasia ke repository
+* Gunakan `.env`
+* Tambahkan `.gitignore`
+
+Buat contoh Firebase Security Rules yang membatasi akses berdasarkan role.
+
+---
+
+# 15. Struktur project
+
+Gunakan struktur seperti:
+
+```text
+absensi-ai/
+│
+├── app.py
+├── config.py
+├── requirements.txt
+├── .env
+├── .gitignore
+│
+├── firebase/
+│   └── firebase_config.py
+│
+├── ai/
+│   ├── face_detector.py
+│   ├── face_recognition.py
+│   └── face_utils.py
+│
+├── routes/
+│   ├── auth.py
+│   ├── attendance.py
+│   ├── students.py
+│   └── reports.py
+│
+├── templates/
+│   ├── login.html
+│   ├── siswa/
+│   │   ├── dashboard.html
+│   │   ├── attendance.html
+│   │   └── history.html
+│   │
+│   └── admin/
+│       ├── dashboard.html
+│       ├── students.html
+│       ├── face_registration.html
+│       └── reports.html
+│
+├── static/
+│   ├── css/
+│   │   └── style.css
+│   ├── js/
+│   │   ├── camera.js
+│   │   ├── attendance.js
+│   │   └── dashboard.js
+│   └── images/
+│
+└── README.md
+```
+
+Sesuaikan struktur jika ada arsitektur yang lebih baik, tetapi jangan membuat project terlalu kompleks.
+
+---
+
+# 16. API backend
+
+Buat endpoint yang jelas, misalnya:
+
+```text
+POST /api/auth/login
+POST /api/face/register
+POST /api/face/recognize
+POST /api/attendance/check-in
+
+GET /api/attendance/today
+GET /api/attendance/history
+
+GET /api/students
+POST /api/students
+PUT /api/students/<id>
+DELETE /api/students/<id>
+
+GET /api/reports
+GET /api/reports/export
+```
+
+Gunakan JSON untuk komunikasi frontend dan backend.
+
+---
+
+# 17. Pencegahan absensi palsu
+
+Tambahkan validasi dasar agar sistem tidak mudah disalahgunakan.
+
+Minimal:
+
+* Kamera harus aktif
+* Wajah harus terlihat jelas
+* Sistem harus mendeteksi wajah secara langsung dari kamera
+* Jangan menerima nama siswa hanya dari frontend
+* Gunakan hasil face recognition dari backend
+* Cegah absensi lebih dari satu kali per hari
+
+Jika memungkinkan, tambahkan **liveness detection sederhana** agar sistem tidak hanya menerima foto yang ditampilkan di depan kamera.
+
+Jangan membuat sistem terlalu berat sehingga sulit dijalankan di komputer sekolah.
+
+---
+
+# 18. Error handling
+
+Tampilkan pesan yang jelas:
+
+Jika kamera tidak tersedia:
+
+> Kamera tidak dapat diakses. Pastikan browser memiliki izin menggunakan kamera.
+
+Jika wajah tidak terdeteksi:
+
+> Wajah belum terdeteksi. Posisikan wajah di depan kamera.
+
+Jika wajah tidak dikenali:
+
+> Wajah tidak dikenali. Silakan coba lagi.
+
+Jika sudah absen:
+
+> Anda sudah melakukan absensi hari ini.
+
+Jika berhasil:
+
+> Absensi berhasil. Selamat datang, [Nama].
+
+---
+
+# 19. Environment variable
+
+Buat `.env.example`, misalnya:
+
+```env
+FLASK_SECRET_KEY=change_this_secret
+
+FIREBASE_DATABASE_URL=https://absensi-ai-6cced-default-rtdb.firebaseio.com/
+
+FACE_RECOGNITION_THRESHOLD=0.50
+
+ATTENDANCE_START_TIME=07:00
+ATTENDANCE_LATE_TIME=07:15
+```
+
+Credential Firebase Admin SDK jangan ditulis langsung di source code.
+
+---
+
+# 20. README
+
+Buat README yang menjelaskan:
+
+1. Persyaratan Python
+2. Cara membuat virtual environment
+3. Cara install dependency
+4. Cara konfigurasi Firebase
+5. Cara memasukkan Firebase service account
+6. Cara mengatur `.env`
+7. Cara menjalankan aplikasi
+8. Cara membuat akun admin
+9. Cara mendaftarkan siswa
+10. Cara mendaftarkan wajah
+11. Cara melakukan absensi
+12. Cara melihat laporan
+13. Cara menjalankan aplikasi di jaringan lokal
+
+Contoh:
+
+```bash
+python -m venv venv
+```
+
+Windows:
+
+```bash
+venv\Scripts\activate
+```
+
+Install:
+
+```bash
+pip install -r requirements.txt
+```
+
+Run:
+
+```bash
+python app.py
+```
+
+---
+
+# 21. Hal yang wajib dibuat
+
+Jangan hanya membuat mockup atau halaman HTML statis.
+
+Saya membutuhkan aplikasi yang benar-benar memiliki:
+
+* Backend Python yang berjalan
+* Firebase Realtime Database
+* Authentication
+* Role siswa/admin
+* Webcam
+* Face detection
+* Face recognition
+* Pendaftaran wajah
+* Absensi otomatis
+* Pencegahan absensi ganda
+* Dashboard siswa
+* Dashboard admin
+* Laporan
+* Filter laporan
+* Export laporan
+* Firebase Security Rules
+* Error handling
+* README
+
+Semua fitur harus saling terhubung.
+
+Jika ada bagian yang belum bisa dibuat karena konfigurasi Firebase atau credential belum tersedia, buat placeholder yang jelas dan jelaskan file/configuration apa yang harus saya isi.
+
+Jangan menggunakan database lokal sebagai database utama. **Firebase Realtime Database harus menjadi database utama aplikasi.**
+
+Prioritaskan kode yang mudah dipahami dan mudah dijalankan oleh pemula.

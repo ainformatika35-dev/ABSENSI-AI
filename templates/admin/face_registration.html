@@ -1,0 +1,371 @@
+{% extends "base.html" %}
+
+{% block title %}Pendaftaran Wajah Siswa - ABSENSI-AI{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Kolom Kiri: Pilihan Siswa & Status Sampel Wajah -->
+    <div class="col-12 col-lg-5 col-xl-4">
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+                <h5 class="fw-bold mb-0 text-dark">Data Siswa</h5>
+                <p class="text-muted small mb-0">Pilih siswa yang akan didaftarkan wajahnya</p>
+            </div>
+            <div class="card-body p-4">
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold text-secondary">Pilih Siswa</label>
+                    <select class="form-select rounded-3 shadow-none" id="selectStudent">
+                        <option value="">-- Pilih Siswa --</option>
+                    </select>
+                </div>
+
+                <!-- Info Box Siswa Terpilih -->
+                <div id="studentInfoBox" class="p-3 rounded-4 bg-light border d-none mb-3">
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                        <div class="avatar-circle bg-primary text-white" id="infoAvatar">B</div>
+                        <div>
+                            <h6 class="fw-bold mb-0 text-dark" id="infoNama">-</h6>
+                            <small class="text-muted">NIS: <span id="infoNis">-</span> &bull; <span id="infoKelas">-</span></small>
+                        </div>
+                    </div>
+                    <div class="pt-2 border-top d-flex justify-content-between align-items-center">
+                        <span class="small text-muted">Status Wajah:</span>
+                        <span id="infoFaceStatus" class="badge bg-secondary rounded-pill">Memeriksa...</span>
+                    </div>
+                </div>
+
+                <!-- Petunjuk Pengambilan Sampel -->
+                <div class="alert alert-info border-0 rounded-4 small p-3 mb-0">
+                    <div class="fw-bold mb-1"><i class="bi bi-info-circle me-1"></i> Rekomendasi 3 Sampel:</div>
+                    <ol class="ps-3 mb-0">
+                        <li><strong>Sampel 1:</strong> Wajah lurus ke depan, ekspresi netral.</li>
+                        <li><strong>Sampel 2:</strong> Sedikit tersenyum atau ekspresi rileks.</li>
+                        <li><strong>Sampel 3:</strong> Posisi kepala sedikit condong atau pencahayaan berbeda.</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thumbnail Sampel yang Diambil -->
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0 text-dark">Sampel Foto Tersimpan (<span id="sampleCountText">0</span>/3)</h6>
+                <button type="button" class="btn btn-sm btn-link text-danger text-decoration-none p-0" id="btnClearSamples" onclick="clearSamples()">
+                    Reset Sampel
+                </button>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-2" id="samplesContainer">
+                    <div class="col-4">
+                        <div class="sample-slot border border-2 border-dashed rounded-3 d-flex flex-column align-items-center justify-content-center text-muted" id="slot-1" style="height: 90px;">
+                            <i class="bi bi-camera fs-4"></i>
+                            <span style="font-size: 0.7rem;">Foto 1</span>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="sample-slot border border-2 border-dashed rounded-3 d-flex flex-column align-items-center justify-content-center text-muted" id="slot-2" style="height: 90px;">
+                            <i class="bi bi-camera fs-4"></i>
+                            <span style="font-size: 0.7rem;">Foto 2</span>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="sample-slot border border-2 border-dashed rounded-3 d-flex flex-column align-items-center justify-content-center text-muted" id="slot-3" style="height: 90px;">
+                            <i class="bi bi-camera fs-4"></i>
+                            <span style="font-size: 0.7rem;">Foto 3</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" class="btn btn-success w-100 rounded-pill py-2 mt-3 fw-semibold shadow-sm d-flex align-items-center justify-content-center gap-2" id="btnSaveEmbeddings" onclick="saveFaceEmbeddingsToFirebase()" disabled>
+                    <i class="bi bi-cloud-arrow-up-fill"></i> Simpan ke Firebase Database
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kolom Kanan: Kamera & Uji Coba -->
+    <div class="col-12 col-lg-7 col-xl-8">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-header bg-white border-0 pt-4 px-4 pb-2 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+                <div>
+                    <h5 class="fw-bold mb-0 text-dark">Kamera & Deteksi Wajah</h5>
+                    <p class="text-muted small mb-0">Pastikan wajah terlihat jelas dan berada di dalam lingkaran</p>
+                </div>
+                <!-- Mode Switch -->
+                <div class="btn-group btn-group-sm rounded-pill p-1 bg-light border">
+                    <button type="button" class="btn btn-sm rounded-pill px-3 active fw-semibold" id="tabModeRegister" onclick="switchCameraMode('register')">
+                        Mode Rekam
+                    </button>
+                    <button type="button" class="btn btn-sm rounded-pill px-3 fw-semibold text-secondary" id="tabModeTest" onclick="switchCameraMode('test')">
+                        Uji Kamera
+                    </button>
+                </div>
+            </div>
+
+            <div class="card-body p-4 text-center">
+                <!-- Webcam Container -->
+                <div class="camera-wrapper position-relative mx-auto rounded-4 overflow-hidden shadow-sm bg-dark" style="max-width: 520px; height: 370px;">
+                    <video id="webcamVideo" autoplay playsinline muted class="w-100 h-100 object-fit-cover"></video>
+                    <canvas id="captureCanvas" class="d-none"></canvas>
+
+                    <!-- Face Guide Oval -->
+                    <div class="face-guide-overlay position-absolute top-50 start-50 translate-middle pointer-events-none">
+                        <div class="face-oval border border-3 border-white border-opacity-75 rounded-pill shadow"></div>
+                    </div>
+
+                    <div id="scannerLine" class="scanner-line d-none"></div>
+
+                    <!-- Camera Error Notice -->
+                    <div id="cameraErrorBox" class="position-absolute top-0 start-0 w-100 h-100 d-none flex-column align-items-center justify-content-center bg-dark text-white p-4">
+                        <i class="bi bi-camera-video-off fs-1 text-danger mb-2"></i>
+                        <h6 class="fw-bold mb-2">Kamera Tidak Aktif</h6>
+                        <p class="small text-white-50 mb-3" id="cameraErrorMessage">
+                            Pastikan webcam terpasang dan browser diizinkan.
+                        </p>
+                        <button class="btn btn-outline-light btn-sm rounded-pill px-4" onclick="initCamera()">Coba Lagi</button>
+                    </div>
+                </div>
+
+                <!-- Controls & Status -->
+                <div class="mt-4">
+                    <div id="registerControls">
+                        <button type="button" class="btn btn-primary btn-lg rounded-pill px-5 fw-bold shadow-sm" id="btnSnapSample" onclick="captureSample()">
+                            <i class="bi bi-camera-fill me-2"></i> Ambil Foto Sampel (<span id="nextSlotText">Foto 1</span>)
+                        </button>
+                    </div>
+
+                    <div id="testControls" class="d-none">
+                        <button type="button" class="btn btn-warning btn-lg rounded-pill px-5 fw-bold shadow-sm text-dark" id="btnTestRecognize" onclick="testRecognizeFace()">
+                            <i class="bi bi-lightning-charge-fill me-2"></i> Uji Pengenalan Wajah
+                        </button>
+                    </div>
+
+                    <!-- Hasil Uji Coba -->
+                    <div id="testResultBox" class="mt-3 p-3 rounded-4 bg-light border d-none mx-auto" style="max-width: 520px;">
+                        <div id="testResultContent" class="small fw-semibold"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/camera.js') }}"></script>
+<script>
+    let studentsMap = {};
+    let capturedSamples = [];
+    let currentMode = 'register'; // 'register' or 'test'
+
+    async function loadStudentsDropdown() {
+        try {
+            const res = await fetch('/api/students');
+            const data = await res.json();
+            const select = document.getElementById('selectStudent');
+
+            (data.students || []).forEach(s => {
+                studentsMap[s.uid] = s;
+                const opt = document.createElement('option');
+                opt.value = s.uid;
+                opt.textContent = `${s.nis} - ${s.nama} (${s.kelas})`;
+                select.appendChild(opt);
+            });
+
+            // Cek URL params jika diarahkan dari halaman data siswa
+            const urlParams = new URLSearchParams(window.location.search);
+            const studentIdParam = urlParams.get('student_id');
+            if (studentIdParam && studentsMap[studentIdParam]) {
+                select.value = studentIdParam;
+                onStudentSelect(studentIdParam);
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    document.getElementById('selectStudent').addEventListener('change', (e) => {
+        onStudentSelect(e.target.value);
+    });
+
+    function onStudentSelect(uid) {
+        const student = studentsMap[uid];
+        const box = document.getElementById('studentInfoBox');
+        if (!student) {
+            box.classList.add('d-none');
+            return;
+        }
+
+        document.getElementById('infoAvatar').textContent = student.nama[0].toUpperCase();
+        document.getElementById('infoNama').textContent = student.nama;
+        document.getElementById('infoNis').textContent = student.nis;
+        document.getElementById('infoKelas').textContent = student.kelas;
+
+        const faceStatusEl = document.getElementById('infoFaceStatus');
+        if (student.face_registered) {
+            faceStatusEl.className = 'badge bg-success rounded-pill';
+            faceStatusEl.innerHTML = `<i class="bi bi-check-circle me-1"></i> Terdaftar (${student.face_samples_count} sampel)`;
+        } else {
+            faceStatusEl.className = 'badge bg-danger rounded-pill';
+            faceStatusEl.textContent = 'Belum Ada Wajah';
+        }
+
+        box.classList.remove('d-none');
+    }
+
+    function switchCameraMode(mode) {
+        currentMode = mode;
+        const regTab = document.getElementById('tabModeRegister');
+        const testTab = document.getElementById('tabModeTest');
+        const regControls = document.getElementById('registerControls');
+        const testControls = document.getElementById('testControls');
+        const testResultBox = document.getElementById('testResultBox');
+
+        if (mode === 'register') {
+            regTab.className = 'btn btn-sm rounded-pill px-3 active fw-semibold btn-primary text-white';
+            testTab.className = 'btn btn-sm rounded-pill px-3 fw-semibold text-secondary';
+            regControls.classList.remove('d-none');
+            testControls.classList.add('d-none');
+            testResultBox.classList.add('d-none');
+        } else {
+            testTab.className = 'btn btn-sm rounded-pill px-3 active fw-semibold btn-warning text-dark';
+            regTab.className = 'btn btn-sm rounded-pill px-3 fw-semibold text-secondary';
+            regControls.classList.add('d-none');
+            testControls.classList.remove('d-none');
+        }
+    }
+
+    function captureSample() {
+        const studentId = document.getElementById('selectStudent').value;
+        if (!studentId) {
+            showToast('Silakan pilih siswa terlebih dahulu di panel sebelah kiri.', 'warning');
+            return;
+        }
+
+        if (capturedSamples.length >= 3) {
+            showToast('Sudah terkumpul 3 foto sampel. Silakan klik "Simpan ke Firebase".', 'info');
+            return;
+        }
+
+        const b64 = captureFrameBase64();
+        if (!b64) {
+            showToast('Gagal menangkap frame webcam.', 'error');
+            return;
+        }
+
+        capturedSamples.push(b64);
+        updateSampleSlots();
+
+        showToast(`Sampel foto #${capturedSamples.length} berhasil diambil.`, 'success');
+    }
+
+    function updateSampleSlots() {
+        for (let i = 1; i <= 3; i++) {
+            const slot = document.getElementById(`slot-${i}`);
+            if (capturedSamples[i - 1]) {
+                slot.className = 'sample-slot rounded-3 overflow-hidden position-relative border border-primary shadow-sm';
+                slot.innerHTML = `
+                    <img src="${capturedSamples[i - 1]}" class="w-100 h-100 object-fit-cover">
+                    <span class="position-absolute bottom-0 start-0 w-100 bg-primary bg-opacity-75 text-white text-center py-1" style="font-size: 0.65rem;">
+                        Sampel #${i}
+                    </span>
+                `;
+            } else {
+                slot.className = 'sample-slot border border-2 border-dashed rounded-3 d-flex flex-column align-items-center justify-content-center text-muted';
+                slot.innerHTML = `<i class="bi bi-camera fs-4"></i><span style="font-size: 0.7rem;">Foto ${i}</span>`;
+            }
+        }
+
+        const count = capturedSamples.length;
+        document.getElementById('sampleCountText').textContent = count;
+        document.getElementById('nextSlotText').textContent = count < 3 ? `Foto ${count + 1}` : 'Lengkap';
+        document.getElementById('btnSaveEmbeddings').disabled = (count === 0);
+    }
+
+    function clearSamples() {
+        capturedSamples = [];
+        updateSampleSlots();
+        showToast('Sampel foto telah di-reset.', 'info');
+    }
+
+    async function saveFaceEmbeddingsToFirebase() {
+        const studentId = document.getElementById('selectStudent').value;
+        if (!studentId) {
+            showToast('Pilih siswa terlebih dahulu.', 'warning');
+            return;
+        }
+        if (capturedSamples.length === 0) {
+            showToast('Belum ada foto sampel yang diambil.', 'warning');
+            return;
+        }
+
+        showLoading('Mengekstrak Fitur AI & Menyimpan Embeddings...');
+        try {
+            const res = await fetch('/api/face/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: studentId,
+                    images: capturedSamples
+                })
+            });
+            const data = await res.json();
+            hideLoading();
+
+            if (res.ok && data.success) {
+                showToast(data.message, 'success');
+                // Refresh data siswa
+                if (studentsMap[studentId]) {
+                    studentsMap[studentId].face_registered = true;
+                    studentsMap[studentId].face_samples_count = data.samples_registered;
+                    onStudentSelect(studentId);
+                }
+                clearSamples();
+            } else {
+                showToast(data.message || 'Gagal menyimpan embedding wajah.', 'error');
+            }
+        } catch (err) {
+            hideLoading();
+            showToast('Kesalahan koneksi saat menyimpan embedding ke Firebase.', 'error');
+        }
+    }
+
+    async function testRecognizeFace() {
+        const b64 = captureFrameBase64();
+        if (!b64) return;
+
+        const resultBox = document.getElementById('testResultBox');
+        const resultContent = document.getElementById('testResultContent');
+        resultBox.classList.remove('d-none');
+        resultContent.innerHTML = `<div class="spinner-border spinner-border-sm text-primary me-2"></div> Menganalisis wajah...`;
+
+        try {
+            const res = await fetch('/api/face/recognize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: b64 })
+            });
+            const data = await res.json();
+
+            if (res.ok && data.success) {
+                resultContent.className = 'text-success fw-bold';
+                resultContent.innerHTML = `
+                    <i class="bi bi-check-circle-fill me-1"></i> Wajah Teridentifikasi: 
+                    ${data.student.nama} (${data.student.kelas}) &bull; Skor Kemiripan: ${(data.similarity * 100).toFixed(1)}%
+                `;
+            } else {
+                resultContent.className = 'text-danger fw-bold';
+                resultContent.innerHTML = `<i class="bi bi-x-circle-fill me-1"></i> ${data.message || 'Wajah tidak dikenali'}`;
+            }
+        } catch (err) {
+            resultContent.className = 'text-danger fw-bold';
+            resultContent.innerHTML = 'Kesalahan saat menghubungi server face recognition.';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initCamera();
+        loadStudentsDropdown();
+    });
+</script>
+{% endblock %}

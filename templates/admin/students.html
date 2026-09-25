@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+
+{% block title %}Kelola Data Siswa - ABSENSI-AI{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-white border-0 pt-4 px-4 pb-3 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                <div>
+                    <h4 class="fw-bold mb-1 text-dark">Data Siswa</h4>
+                    <p class="text-muted small mb-0">Kelola informasi siswa dan status pendaftaran wajah AI</p>
+                </div>
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <div class="input-group input-group-sm" style="max-width: 250px;">
+                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control bg-light border-start-0" id="searchStudent" placeholder="Cari nama atau NIS...">
+                    </div>
+                    <button class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#modalAddStudent">
+                        <i class="bi bi-person-plus-fill"></i> Tambah Siswa
+                    </button>
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="border-0 rounded-start">NIS</th>
+                                <th class="border-0">Nama Lengkap</th>
+                                <th class="border-0">Kelas</th>
+                                <th class="border-0">Jenis Kelamin</th>
+                                <th class="border-0">Status Wajah AI</th>
+                                <th class="border-0 text-end rounded-end">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentTableBody">
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                                    Memuat data siswa...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Tambah Siswa -->
+<div class="modal fade" id="modalAddStudent" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-primary text-white border-0 py-3">
+                <h5 class="modal-title fw-bold fs-6"><i class="bi bi-person-plus me-2"></i>Tambah Siswa Baru</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formAddStudent">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Nomor Induk Siswa (NIS) *</label>
+                        <input type="text" class="form-control rounded-3" name="nis" id="addNis" placeholder="Contoh: 1004" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Nama Lengkap *</label>
+                        <input type="text" class="form-control rounded-3" name="nama" id="addNama" placeholder="Nama siswa" required>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-secondary">Kelas *</label>
+                            <input type="text" class="form-control rounded-3" name="kelas" id="addKelas" placeholder="Contoh: XI IPA 1" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-secondary">Jenis Kelamin</label>
+                            <select class="form-select rounded-3" name="gender" id="addGender">
+                                <option value="Laki-laki">Laki-laki</option>
+                                <option value="Perempuan">Perempuan</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Password Awal Akun</label>
+                        <input type="password" class="form-control rounded-3" name="password" id="addPassword" value="siswa123" required>
+                        <small class="text-muted" style="font-size: 0.75rem;">Password default: <code>siswa123</code></small>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 bg-light p-3">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold" id="btnSubmitAdd">Simpan Siswa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Edit Siswa -->
+<div class="modal fade" id="modalEditStudent" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-secondary text-white border-0 py-3">
+                <h5 class="modal-title fw-bold fs-6"><i class="bi bi-pencil-square me-2"></i>Edit Data Siswa</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formEditStudent">
+                <input type="hidden" id="editUid" name="uid">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">NIS (Tidak Dapat Diubah)</label>
+                        <input type="text" class="form-control rounded-3 bg-light" id="editNis" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Nama Lengkap *</label>
+                        <input type="text" class="form-control rounded-3" id="editNama" required>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-secondary">Kelas *</label>
+                            <input type="text" class="form-control rounded-3" id="editKelas" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-secondary">Jenis Kelamin</label>
+                            <select class="form-select rounded-3" id="editGender">
+                                <option value="Laki-laki">Laki-laki</option>
+                                <option value="Perempuan">Perempuan</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Status Siswa</label>
+                        <select class="form-select rounded-3" id="editStatus">
+                            <option value="active">Aktif</option>
+                            <option value="inactive">Nonaktif</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Ganti Password (Opsional)</label>
+                        <input type="password" class="form-control rounded-3" id="editPassword" placeholder="Kosongkan jika tidak diubah">
+                    </div>
+                </div>
+                <div class="modal-footer border-0 bg-light p-3">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold">Perbarui</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let studentsList = [];
+
+    async function loadStudents() {
+        try {
+            const res = await fetch('/api/students');
+            const data = await res.json();
+            studentsList = data.students || [];
+            renderStudentsTable(studentsList);
+        } catch (err) {
+            console.error(err);
+            document.getElementById('studentTableBody').innerHTML = `
+                <tr><td colspan="6" class="text-center py-4 text-danger">Gagal memuat data siswa.</td></tr>
+            `;
+        }
+    }
+
+    function renderStudentsTable(students) {
+        const tbody = document.getElementById('studentTableBody');
+        if (!students || students.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted">Belum ada data siswa yang tersimpan.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = students.map(s => {
+            const faceBadge = s.face_registered 
+                ? `<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">
+                     <i class="bi bi-check-circle me-1"></i> Terdaftar (${s.face_samples_count} sampel)
+                   </span>`
+                : `<span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-1">
+                     <i class="bi bi-x-circle me-1"></i> Belum Didaftarkan
+                   </span>`;
+
+            return `
+                <tr>
+                    <td class="fw-bold text-primary">${s.nis}</td>
+                    <td>
+                        <div class="fw-semibold text-dark">${s.nama}</div>
+                        <small class="text-muted">${s.gender || '-'}</small>
+                    </td>
+                    <td><span class="badge bg-light text-secondary border px-2 py-1">${s.kelas}</span></td>
+                    <td>${s.gender || '-'}</td>
+                    <td>${faceBadge}</td>
+                    <td class="text-end">
+                        <div class="btn-group btn-group-sm">
+                            <a href="/admin/face-registration?student_id=${s.uid}" class="btn btn-outline-primary" title="Daftarkan / Scan Wajah">
+                                <i class="bi bi-person-bounding-box"></i>
+                            </a>
+                            <button type="button" class="btn btn-outline-secondary" onclick="openEditModal('${s.uid}')" title="Edit Data">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            ${s.face_registered ? `
+                            <button type="button" class="btn btn-outline-warning" onclick="resetFace('${s.uid}', '${s.nama}')" title="Reset Data Wajah">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                            </button>` : ''}
+                            <button type="button" class="btn btn-outline-danger" onclick="deleteStudent('${s.uid}', '${s.nama}')" title="Hapus Siswa">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // Filter Search
+    document.getElementById('searchStudent').addEventListener('input', (e) => {
+        const q = e.target.value.toLowerCase().trim();
+        const filtered = studentsList.filter(s => 
+            (s.nama || '').toLowerCase().includes(q) || (s.nis || '').includes(q) || (s.kelas || '').toLowerCase().includes(q)
+        );
+        renderStudentsTable(filtered);
+    });
+
+    // Form Tambah Siswa
+    document.getElementById('formAddStudent').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const nis = document.getElementById('addNis').value.trim();
+        const nama = document.getElementById('addNama').value.trim();
+        const kelas = document.getElementById('addKelas').value.trim();
+        const gender = document.getElementById('addGender').value;
+        const password = document.getElementById('addPassword').value;
+
+        showLoading('Menyimpan Siswa Baru...');
+        try {
+            const res = await fetch('/api/students', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nis, nama, kelas, gender, password })
+            });
+            const data = await res.json();
+            hideLoading();
+
+            if (res.ok && data.success) {
+                showToast(data.message, 'success');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalAddStudent'));
+                modal.hide();
+                document.getElementById('formAddStudent').reset();
+                loadStudents();
+            } else {
+                showToast(data.message || 'Gagal menambahkan siswa', 'error');
+            }
+        } catch (err) {
+            hideLoading();
+            showToast('Kesalahan koneksi saat menyimpan siswa', 'error');
+        }
+    });
+
+    // Open Edit Modal
+    function openEditModal(uid) {
+        const student = studentsList.find(s => s.uid === uid);
+        if (!student) return;
+
+        document.getElementById('editUid').value = student.uid;
+        document.getElementById('editNis').value = student.nis;
+        document.getElementById('editNama').value = student.nama;
+        document.getElementById('editKelas').value = student.kelas;
+        document.getElementById('editGender').value = student.gender || 'Laki-laki';
+        document.getElementById('editStatus').value = student.status || 'active';
+        document.getElementById('editPassword').value = '';
+
+        const modal = new bootstrap.Modal(document.getElementById('modalEditStudent'));
+        modal.show();
+    }
+
+    // Submit Edit Siswa
+    document.getElementById('formEditStudent').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const uid = document.getElementById('editUid').value;
+        const nama = document.getElementById('editNama').value.trim();
+        const kelas = document.getElementById('editKelas').value.trim();
+        const gender = document.getElementById('editGender').value;
+        const status = document.getElementById('editStatus').value;
+        const password = document.getElementById('editPassword').value;
+
+        showLoading('Memperbarui Data Siswa...');
+        try {
+            const payload = { nama, kelas, gender, status };
+            if (password.trim()) payload.password = password.trim();
+
+            const res = await fetch(`/api/students/${uid}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            hideLoading();
+
+            if (res.ok && data.success) {
+                showToast(data.message, 'success');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditStudent'));
+                modal.hide();
+                loadStudents();
+            } else {
+                showToast(data.message || 'Gagal memperbarui siswa', 'error');
+            }
+        } catch (err) {
+            hideLoading();
+            showToast('Kesalahan koneksi saat memperbarui siswa', 'error');
+        }
+    });
+
+    // Reset Face Data
+    async function resetFace(uid, nama) {
+        if (!confirm(`Reset data wajah siswa ${nama}? Anda harus mendaftarkan ulang sampel foto wajahnya.`)) return;
+
+        showLoading('Mereset Data Wajah...');
+        try {
+            const res = await fetch(`/api/students/${uid}/reset-face`, { method: 'POST' });
+            const data = await res.json();
+            hideLoading();
+            if (data.success) {
+                showToast(data.message, 'success');
+                loadStudents();
+            } else {
+                showToast(data.message, 'error');
+            }
+        } catch (err) {
+            hideLoading();
+            showToast('Gagal mereset data wajah', 'error');
+        }
+    }
+
+    // Delete Student
+    async function deleteStudent(uid, nama) {
+        if (!confirm(`Yakin ingin menghapus siswa ${nama} secara permanen dari sistem?`)) return;
+
+        showLoading('Menghapus Siswa...');
+        try {
+            const res = await fetch(`/api/students/${uid}`, { method: 'DELETE' });
+            const data = await res.json();
+            hideLoading();
+            if (data.success) {
+                showToast(data.message, 'success');
+                loadStudents();
+            } else {
+                showToast(data.message, 'error');
+            }
+        } catch (err) {
+            hideLoading();
+            showToast('Gagal menghapus siswa', 'error');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadStudents);
+</script>
+{% endblock %}

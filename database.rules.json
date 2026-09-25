@@ -1,0 +1,27 @@
+{
+  "rules": {
+    "users": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && (auth.token.role === 'admin' || auth.uid === $uid)",
+        ".validate": "newData.hasChildren(['uid', 'nama', 'role', 'status'])"
+      }
+    },
+    "face_data": {
+      "$uid": {
+        ".read": "auth != null && (auth.token.role === 'admin' || auth.uid === $uid)",
+        ".write": "auth != null && auth.token.role === 'admin'"
+      }
+    },
+    "attendance": {
+      "$date": {
+        ".read": "auth != null",
+        "$uid": {
+          ".read": "auth != null && (auth.token.role === 'admin' || auth.uid === $uid)",
+          ".write": "auth != null && (auth.token.role === 'admin' || auth.uid === $uid)",
+          ".validate": "newData.hasChildren(['userId', 'tanggal', 'jam', 'status', 'method'])"
+        }
+      }
+    }
+  }
+}

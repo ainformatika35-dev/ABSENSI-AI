@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Riwayat Kehadiran - ABSENSI-AI{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-white border-0 pt-4 px-4 pb-3 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                <div>
+                    <h4 class="fw-bold mb-1 text-dark">Riwayat Kehadiran</h4>
+                    <p class="text-muted small mb-0">Seluruh catatan kehadiran Anda tercatat di Firebase Realtime Database</p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <input type="month" class="form-control form-control-sm rounded-pill px-3" id="monthFilter" style="max-width: 180px;">
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="resetFilter()">Reset</button>
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="border-0 rounded-start">No</th>
+                                <th class="border-0">Tanggal</th>
+                                <th class="border-0">Waktu Presensi</th>
+                                <th class="border-0">Status</th>
+                                <th class="border-0 rounded-end">Metode</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">
+                                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                                    Memuat data riwayat kehadiran...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let allHistory = [];
+
+    async function loadHistory() {
+        try {
+            const res = await fetch('/api/attendance/history');
+            const data = await res.json();
+            allHistory = data.history || [];
+            renderHistory(allHistory);
+        } catch (err) {
+            console.error(err);
+            document.getElementById('historyTableBody').innerHTML = `
+                <tr><td colspan="5" class="text-center py-4 text-danger">Gagal memuat riwayat.</td></tr>
+            `;
+        }
+    }
+
+    function renderHistory(records) {
+        const tbody = document.getElementById('historyTableBody');
+        if (!records || records.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-muted">Belum ada riwayat presensi yang sesuai.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = records.map((rec, index) => {
+            const st = (rec.status || 'Hadir').toLowerCase();
+            let badgeClass = 'bg-success-subtle text-success border border-success-subtle';
+            if (st === 'terlambat') badgeClass = 'bg-warning-subtle text-warning border border-warning-subtle';
+            else if (st === 'izin') badgeClass = 'bg-info-subtle text-info border border-info-subtle';
+            else if (st === 'sakit') badgeClass = 'bg-primary-subtle text-primary border border-primary-subtle';
+            else if (st === 'alpa') badgeClass = 'bg-danger-subtle text-danger border border-danger-subtle';
+
+            return `
+                <tr>
+                    <td class="text-muted small">${index + 1}</td>
+                    <td class="fw-semibold text-dark">${rec.tanggal || '-'}</td>
+                    <td class="text-secondary">${rec.jam || '-'} WIB</td>
+                    <td>
+                        <span class="badge ${badgeClass} rounded-pill px-3 py-1 fw-semibold">
+                            ${rec.status || 'Hadir'}
+                        </span>
+                    </td>
+                    <td class="small text-muted">
+                        ${rec.method === 'face_recognition' ? '<i class="bi bi-person-check text-primary me-1"></i> AI Pengenalan Wajah' : '<i class="bi bi-pencil-square text-secondary me-1"></i> Konfirmasi Manual'}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    document.getElementById('monthFilter').addEventListener('change', (e) => {
+        const val = e.target.value; // Format: YYYY-MM
+        if (!val) {
+            renderHistory(allHistory);
+            return;
+        }
+        const filtered = allHistory.filter(r => (r.tanggal || '').startsWith(val));
+        renderHistory(filtered);
+    });
+
+    function resetFilter() {
+        document.getElementById('monthFilter').value = '';
+        renderHistory(allHistory);
+    }
+
+    document.addEventListener('DOMContentLoaded', loadHistory);
+</script>
+{% endblock %}

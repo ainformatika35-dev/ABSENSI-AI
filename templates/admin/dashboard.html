@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Admin - ABSENSI-AI{% endblock %}
+
+{% block extra_head %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Firebase Status Banner -->
+{% if not firebase_connected %}
+<div class="alert alert-warning border-0 shadow-sm rounded-4 d-flex align-items-center justify-content-between p-3 mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <div class="bg-warning text-dark p-2 rounded-circle d-flex align-items-center justify-content-center">
+            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+        </div>
+        <div>
+            <h6 class="fw-bold mb-0 text-dark">Firebase Mode Transisi / Placeholder Aktif</h6>
+            <p class="small text-muted mb-0">
+                File <code>serviceAccountKey.json</code> belum diletakkan di root project. Unduh dari Firebase Console agar terhubung langsung ke Firebase Realtime Database.
+            </p>
+        </div>
+    </div>
+    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">Offline Fallback</span>
+</div>
+{% else %}
+<div class="alert alert-success border-0 shadow-sm rounded-4 d-flex align-items-center justify-content-between p-3 mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <div class="bg-success text-white p-2 rounded-circle d-flex align-items-center justify-content-center">
+            <i class="bi bi-cloud-check-fill fs-5"></i>
+        </div>
+        <div>
+            <h6 class="fw-bold mb-0 text-dark">Terhubung ke Firebase Realtime Database</h6>
+            <p class="small text-muted mb-0">Database sinkron secara realtime: <code>absensi-ai-6cced</code></p>
+        </div>
+    </div>
+    <span class="badge bg-success px-3 py-2 rounded-pill">Firebase Connected</span>
+</div>
+{% endif %}
+
+<!-- Header & Tanggal -->
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4">
+    <div>
+        <h4 class="fw-bold mb-1 text-dark">Ringkasan Presensi Hari Ini</h4>
+        <p class="text-muted small mb-0" id="todayDateLabel">Memuat tanggal...</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/admin/face-registration" class="btn btn-primary rounded-pill px-3 shadow-sm d-flex align-items-center gap-2">
+            <i class="bi bi-person-bounding-box"></i> Pendaftaran Wajah
+        </a>
+        <a href="/admin/reports" class="btn btn-outline-secondary rounded-pill px-3 d-flex align-items-center gap-2">
+            <i class="bi bi-file-earmark-spreadsheet"></i> Laporan
+        </a>
+    </div>
+</div>
+
+<!-- 5 Stat Cards (Total Siswa, Hadir, Terlambat, Izin, Alpa) -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-4 col-xl">
+        <div class="card border-0 shadow-sm rounded-4 h-100 p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon bg-primary-subtle text-primary rounded-4 d-flex align-items-center justify-content-center">
+                    <i class="bi bi-people-fill fs-4"></i>
+                </div>
+                <div>
+                    <div class="text-muted small fw-semibold">Total Siswa</div>
+                    <h3 class="fw-bold mb-0 text-dark" id="statTotalStudents">-</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-md-4 col-xl">
+        <div class="card border-0 shadow-sm rounded-4 h-100 p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon bg-success-subtle text-success rounded-4 d-flex align-items-center justify-content-center">
+                    <i class="bi bi-check-circle-fill fs-4"></i>
+                </div>
+                <div>
+                    <div class="text-muted small fw-semibold">Hadir Hari Ini</div>
+                    <h3 class="fw-bold mb-0 text-success" id="statHadir">-</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-md-4 col-xl">
+        <div class="card border-0 shadow-sm rounded-4 h-100 p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon bg-warning-subtle text-warning rounded-4 d-flex align-items-center justify-content-center">
+                    <i class="bi bi-alarm-fill fs-4"></i>
+                </div>
+                <div>
+                    <div class="text-muted small fw-semibold">Terlambat</div>
+                    <h3 class="fw-bold mb-0 text-warning" id="statTerlambat">-</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-md-4 col-xl">
+        <div class="card border-0 shadow-sm rounded-4 h-100 p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon bg-info-subtle text-info rounded-4 d-flex align-items-center justify-content-center">
+                    <i class="bi bi-clipboard-pulse fs-4"></i>
+                </div>
+                <div>
+                    <div class="text-muted small fw-semibold">Izin / Sakit</div>
+                    <h3 class="fw-bold mb-0 text-info" id="statIzinSakit">-</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-md-4 col-xl">
+        <div class="card border-0 shadow-sm rounded-4 h-100 p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon bg-danger-subtle text-danger rounded-4 d-flex align-items-center justify-content-center">
+                    <i class="bi bi-x-circle-fill fs-4"></i>
+                </div>
+                <div>
+                    <div class="text-muted small fw-semibold">Alpa / Belum</div>
+                    <h3 class="fw-bold mb-0 text-danger" id="statAlpa">-</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="row g-4 mb-4">
+    <!-- Chart 1: Tren Kehadiran 7 Hari Terakhir -->
+    <div class="col-12 col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0 text-dark">Tren Kehadiran (7 Hari Terakhir)</h6>
+                <span class="badge bg-light text-muted border rounded-pill px-3 py-1">Harian</span>
+            </div>
+            <div class="card-body p-4">
+                <div style="height: 280px;">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart 2: Komposisi Kehadiran Hari Ini -->
+    <div class="col-12 col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+                <h6 class="fw-bold mb-0 text-dark">Distribusi Kehadiran</h6>
+            </div>
+            <div class="card-body p-4 d-flex align-items-center justify-content-center">
+                <div style="width: 220px; height: 220px;">
+                    <canvas id="distributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart 3: Rekap Per Kelas -->
+<div class="row g-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+                <h6 class="fw-bold mb-0 text-dark">Rekap Kehadiran Per Kelas Hari Ini</h6>
+            </div>
+            <div class="card-body p-4">
+                <div style="height: 260px;">
+                    <canvas id="classChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let trendChartInstance = null;
+    let distChartInstance = null;
+    let classChartInstance = null;
+
+    async function loadAdminStats() {
+        try {
+            const res = await fetch('/api/admin/stats');
+            const data = await res.json();
+
+            if (!data.success) return;
+
+            // Update stats
+            document.getElementById('statTotalStudents').textContent = data.total_students;
+            document.getElementById('statHadir').textContent = data.hadir;
+            document.getElementById('statTerlambat').textContent = data.terlambat;
+            document.getElementById('statIzinSakit').textContent = (data.izin || 0) + (data.sakit || 0);
+            document.getElementById('statAlpa').textContent = data.alpa;
+
+            const tgl = new Date(data.date);
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('todayDateLabel').textContent = tgl.toLocaleDateString('id-ID', options);
+
+            renderTrendChart(data.trend);
+            renderDistributionChart(data);
+            renderClassChart(data.kelas_stats);
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    function renderTrendChart(trend) {
+        const ctx = document.getElementById('trendChart').getContext('2d');
+        if (trendChartInstance) trendChartInstance.destroy();
+
+        trendChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: trend.labels,
+                datasets: [
+                    {
+                        label: 'Hadir Tepat Waktu',
+                        data: trend.hadir,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.35,
+                        fill: true
+                    },
+                    {
+                        label: 'Terlambat',
+                        data: trend.terlambat,
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        tension: 0.35,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 } }
+                }
+            }
+        });
+    }
+
+    function renderDistributionChart(data) {
+        const ctx = document.getElementById('distributionChart').getContext('2d');
+        if (distChartInstance) distChartInstance.destroy();
+
+        distChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Hadir', 'Terlambat', 'Izin/Sakit', 'Alpa/Belum'],
+                datasets: [{
+                    data: [data.hadir, data.terlambat, (data.izin || 0) + (data.sakit || 0), data.alpa],
+                    backgroundColor: ['#10b981', '#f59e0b', '#06b6d4', '#ef4444'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+    }
+
+    function renderClassChart(kelasStats) {
+        const ctx = document.getElementById('classChart').getContext('2d');
+        if (classChartInstance) classChartInstance.destroy();
+
+        const labels = Object.keys(kelasStats || {});
+        const hadirData = labels.map(k => (kelasStats[k].hadir || 0) + (kelasStats[k].terlambat || 0));
+        const absenData = labels.map(k => kelasStats[k].absen || 0);
+
+        classChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'Hadir (Termasuk Terlambat)', data: hadirData, backgroundColor: '#3b82f6' },
+                    { label: 'Belum / Tidak Hadir', data: absenData, backgroundColor: '#e2e8f0' }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } },
+                scales: {
+                    x: { stacked: true },
+                    y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } }
+                }
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', loadAdminStats);
+</script>
+{% endblock %}

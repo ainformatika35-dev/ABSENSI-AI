@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Absensi Wajah AI - ABSENSI-AI{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8 col-xl-7">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+            <div class="card-header bg-white border-0 pt-4 px-4 pb-2 d-flex align-items-center justify-content-between">
+                <div>
+                    <h5 class="fw-bold mb-0 text-dark">Presensi Wajah AI</h5>
+                    <p class="text-muted small mb-0">Posisikan wajah Anda tepat di dalam frame kamera</p>
+                </div>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill">
+                    <i class="bi bi-clock me-1"></i> Batas: {{ late_time }} WIB
+                </span>
+            </div>
+
+            <div class="card-body p-4 text-center">
+                <!-- Video & Guide Container -->
+                <div class="camera-wrapper position-relative mx-auto rounded-4 overflow-hidden shadow-sm bg-dark" style="max-width: 540px; height: 380px;">
+                    <video id="webcamVideo" autoplay playsinline muted class="w-100 h-100 object-fit-cover"></video>
+                    <canvas id="captureCanvas" class="d-none"></canvas>
+
+                    <!-- Face Guide Oval Overlay -->
+                    <div class="face-guide-overlay position-absolute top-50 start-50 translate-middle pointer-events-none">
+                        <div class="face-oval border border-3 border-white border-opacity-75 rounded-pill shadow"></div>
+                        <div class="guide-text text-white small fw-semibold mt-2 text-shadow">
+                            Posisikan Wajah Di Sini
+                        </div>
+                    </div>
+
+                    <!-- Scanning Line Animation -->
+                    <div id="scannerLine" class="scanner-line d-none"></div>
+
+                    <!-- Camera Error Notice -->
+                    <div id="cameraErrorBox" class="position-absolute top-0 start-0 w-100 h-100 d-none flex-column align-items-center justify-content-center bg-dark text-white p-4">
+                        <i class="bi bi-camera-video-off fs-1 text-danger mb-2"></i>
+                        <h6 class="fw-bold mb-2">Kamera Tidak Dapat Diakses</h6>
+                        <p class="small text-white-50 mb-3" id="cameraErrorMessage">
+                            Kamera tidak dapat diakses. Pastikan browser memiliki izin menggunakan kamera.
+                        </p>
+                        <button class="btn btn-outline-light btn-sm rounded-pill px-4" onclick="initCamera()">
+                            <i class="bi bi-arrow-clockwise me-1"></i> Coba Lagi
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Result Card -->
+                <div id="attendanceResultCard" class="card border-0 rounded-4 mt-4 d-none">
+                    <div class="card-body p-4 text-center" id="resultCardBody">
+                        <!-- Konten hasil via JS -->
+                    </div>
+                </div>
+
+                <!-- Action Controls -->
+                <div class="mt-4 d-flex justify-content-center gap-3" id="actionControls">
+                    <button type="button" class="btn btn-primary btn-lg rounded-pill px-5 fw-bold shadow-sm d-flex align-items-center gap-2" id="btnCapture">
+                        <i class="bi bi-camera-fill"></i>
+                        <span>Scan & Verifikasi Wajah</span>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-lg rounded-pill px-4" id="btnRestartCam" title="Muat Ulang Kamera" onclick="initCamera()">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center">
+            <a href="/siswa/dashboard" class="btn btn-link text-decoration-none text-muted small">
+                <i class="bi bi-arrow-left me-1"></i> Kembali ke Dashboard Siswa
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/camera.js') }}"></script>
+<script src="{{ url_for('static', filename='js/attendance.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        initCamera();
+
+        document.getElementById('btnCapture').addEventListener('click', () => {
+            performAttendanceCheckIn();
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+
+{% block title %}Laporan Absensi - ABSENSI-AI{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-header bg-white border-0 pt-4 px-4 pb-3 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                <div>
+                    <h4 class="fw-bold mb-1 text-dark">Laporan Presensi Siswa</h4>
+                    <p class="text-muted small mb-0">Saring dan ekspor data kehadiran langsung dari Firebase Realtime Database</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#modalManualAttendance">
+                        <i class="bi bi-pencil-square"></i> Input Izin / Sakit Manual
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm rounded-pill px-3 d-flex align-items-center gap-1" onclick="exportData('csv')">
+                        <i class="bi bi-file-earmark-text"></i> Export CSV
+                    </button>
+                    <button type="button" class="btn btn-success btn-sm rounded-pill px-3 d-flex align-items-center gap-1 shadow-sm" onclick="exportData('excel')">
+                        <i class="bi bi-file-earmark-excel"></i> Export Excel
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filter Controls -->
+            <div class="card-body p-4 border-top bg-light-subtle">
+                <form id="filterForm" class="row g-3 align-items-end">
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small fw-semibold text-secondary">Tanggal Mulai</label>
+                        <input type="date" class="form-control form-control-sm rounded-3" id="filterStart">
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small fw-semibold text-secondary">Tanggal Akhir</label>
+                        <input type="date" class="form-control form-control-sm rounded-3" id="filterEnd">
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small fw-semibold text-secondary">Kelas</label>
+                        <select class="form-select form-select-sm rounded-3" id="filterKelas">
+                            <option value="">Semua Kelas</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small fw-semibold text-secondary">Status Kehadiran</label>
+                        <select class="form-select form-select-sm rounded-3" id="filterStatus">
+                            <option value="">Semua Status</option>
+                            <option value="Hadir">Hadir</option>
+                            <option value="Terlambat">Terlambat</option>
+                            <option value="Izin">Izin</option>
+                            <option value="Sakit">Sakit</option>
+                            <option value="Alpa">Alpa</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-2">
+                        <label class="form-label small fw-semibold text-secondary">Nama / NIS</label>
+                        <input type="text" class="form-control form-control-sm rounded-3" id="filterNama" placeholder="Ketik nama / NIS...">
+                    </div>
+                    <div class="col-12 col-md-2 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm rounded-3 w-100 fw-semibold">
+                            <i class="bi bi-funnel-fill me-1"></i> Filter
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-3" onclick="resetReportFilter()">
+                            Reset
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Tabel Data Laporan -->
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="small text-muted">
+                        Ditemukan <strong class="text-dark" id="totalRecordsCount">0</strong> data presensi
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="border-0 rounded-start">No</th>
+                                <th class="border-0">NIS</th>
+                                <th class="border-0">Nama Siswa</th>
+                                <th class="border-0">Kelas</th>
+                                <th class="border-0">Tanggal</th>
+                                <th class="border-0">Jam</th>
+                                <th class="border-0">Status</th>
+                                <th class="border-0 rounded-end">Metode</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportTableBody">
+                            <tr>
+                                <td colspan="8" class="text-center py-4 text-muted">
+                                    <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+                                    Memuat data laporan dari Firebase...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Input Absensi Manual (Izin/Sakit/Alpa) -->
+<div class="modal fade" id="modalManualAttendance" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-primary text-white border-0 py-3">
+                <h5 class="modal-title fw-bold fs-6"><i class="bi bi-pencil-square me-2"></i>Input Presensi Manual</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formManualAttendance">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Pilih Siswa *</label>
+                        <select class="form-select rounded-3" id="manualStudentSelect" required>
+                            <option value="">-- Pilih Siswa --</option>
+                        </select>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-secondary">Tanggal *</label>
+                            <input type="date" class="form-control rounded-3" id="manualTanggal" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-secondary">Status *</label>
+                            <select class="form-select rounded-3" id="manualStatus" required>
+                                <option value="Izin">Izin</option>
+                                <option value="Sakit">Sakit</option>
+                                <option value="Alpa">Alpa</option>
+                                <option value="Hadir">Hadir</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Keterangan Tambahan</label>
+                        <textarea class="form-control rounded-3" id="manualKeterangan" rows="2" placeholder="Contoh: Surat dokter terlampir"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 bg-light p-3">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold">Simpan Presensi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let currentFilterParams = {};
+
+    async function loadReports(params = {}) {
+        const tbody = document.getElementById('reportTableBody');
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat data laporan...</td></tr>`;
+
+        try {
+            const qs = new URLSearchParams(params).toString();
+            const res = await fetch(`/api/reports?${qs}`);
+            const data = await res.json();
+
+            document.getElementById('totalRecordsCount').textContent = data.count || 0;
+            renderReportTable(data.records || []);
+        } catch (err) {
+            console.error(err);
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">Gagal memuat data laporan dari Firebase.</td></tr>`;
+        }
+    }
+
+    function renderReportTable(records) {
+        const tbody = document.getElementById('reportTableBody');
+        if (!records || records.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-muted">Tidak ada data kehadiran yang sesuai dengan filter.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = records.map((r, idx) => {
+            const st = (r.status || 'Hadir').toLowerCase();
+            let badgeClass = 'bg-success-subtle text-success border border-success-subtle';
+            if (st === 'terlambat') badgeClass = 'bg-warning-subtle text-warning border border-warning-subtle';
+            else if (st === 'izin') badgeClass = 'bg-info-subtle text-info border border-info-subtle';
+            else if (st === 'sakit') badgeClass = 'bg-primary-subtle text-primary border border-primary-subtle';
+            else if (st === 'alpa') badgeClass = 'bg-danger-subtle text-danger border border-danger-subtle';
+
+            return `
+                <tr>
+                    <td class="text-muted small">${idx + 1}</td>
+                    <td class="fw-semibold text-primary">${r.nis || '-'}</td>
+                    <td class="fw-semibold text-dark">${r.nama || '-'}</td>
+                    <td><span class="badge bg-light text-secondary border px-2 py-1">${r.kelas || '-'}</span></td>
+                    <td class="text-dark">${r.tanggal || '-'}</td>
+                    <td class="text-secondary">${r.jam || '-'}</td>
+                    <td><span class="badge ${badgeClass} rounded-pill px-3 py-1 fw-semibold">${r.status || 'Hadir'}</span></td>
+                    <td class="small text-muted">${r.method === 'face_recognition' ? '<i class="bi bi-camera me-1"></i> AI Wajah' : (r.method || 'Manual')}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    async function loadFilterClasses() {
+        try {
+            const res = await fetch('/api/students');
+            const data = await res.json();
+            const students = data.students || [];
+
+            const kelasSet = new Set();
+            const manualSelect = document.getElementById('manualStudentSelect');
+
+            students.forEach(s => {
+                if (s.kelas) kelasSet.add(s.kelas);
+                const opt = document.createElement('option');
+                opt.value = s.uid;
+                opt.textContent = `${s.nis} - ${s.nama} (${s.kelas})`;
+                manualSelect.appendChild(opt);
+            });
+
+            const filterKelas = document.getElementById('filterKelas');
+            Array.from(kelasSet).sort().forEach(k => {
+                const opt = document.createElement('option');
+                opt.value = k;
+                opt.textContent = k;
+                filterKelas.appendChild(opt);
+            });
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    document.getElementById('filterForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        currentFilterParams = {
+            tanggal_mulai: document.getElementById('filterStart').value,
+            tanggal_akhir: document.getElementById('filterEnd').value,
+            kelas: document.getElementById('filterKelas').value,
+            status: document.getElementById('filterStatus').value,
+            nama: document.getElementById('filterNama').value.trim()
+        };
+        loadReports(currentFilterParams);
+    });
+
+    function resetReportFilter() {
+        document.getElementById('filterForm').reset();
+        currentFilterParams = {};
+        loadReports({});
+    }
+
+    function exportData(format) {
+        const params = new URLSearchParams(currentFilterParams);
+        params.set('format', format);
+        window.location.href = `/api/reports/export?${params.toString()}`;
+    }
+
+    // Modal Manual Attendance
+    document.getElementById('formManualAttendance').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const userId = document.getElementById('manualStudentSelect').value;
+        const tanggal = document.getElementById('manualTanggal').value;
+        const status = document.getElementById('manualStatus').value;
+        const keterangan = document.getElementById('manualKeterangan').value.trim();
+
+        showLoading('Menyimpan Absensi Manual...');
+        try {
+            const res = await fetch('/api/attendance/manual', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId, tanggal, status, keterangan })
+            });
+            const data = await res.json();
+            hideLoading();
+
+            if (res.ok && data.success) {
+                showToast(data.message, 'success');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalManualAttendance'));
+                modal.hide();
+                loadReports(currentFilterParams);
+            } else {
+                showToast(data.message || 'Gagal menyimpan absensi manual.', 'error');
+            }
+        } catch (err) {
+            hideLoading();
+            showToast('Kesalahan saat menyimpan absensi.', 'error');
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('manualTanggal').valueAsDate = new Date();
+        loadFilterClasses();
+        loadReports({});
+    });
+</script>
+{% endblock %}
