@@ -1,218 +1,281 @@
-# ABSENSI-AI: Aplikasi Presensi Wajah Berbasis AI & Firebase
+<div align="center">
 
-Aplikasi web modern untuk presensi/absensi siswa menggunakan deteksi dan pengenalan wajah (*Face Recognition AI*) berbasis Python (Flask + OpenCV Deep Learning) dan terintegrasi dengan **Firebase Realtime Database**.
+<img src="static/images/logo.svg" alt="ABSENSI-AI Logo" width="100"/>
 
----
+# 🎓 ABSENSI-AI
 
-## 🌟 Fitur Utama
+### Sistem Presensi Cerdas Berbasis Pengenalan Wajah & Firebase
 
-1. **Pengenalan Wajah AI Mendalam**:
-   - Deteksi wajah akurat menggunakan model **YuNet**.
-   - Ekstraksi fitur embedding 128-dimensi menggunakan **SFace** (OpenCV DNN).
-   - Validasi ketajaman (*Laplacian Variance*) dan deteksi keaslian (*Liveness Detection*) untuk mencegah kecurangan menggunakan foto cetak atau layar ponsel.
-   - Threshold kemiripan dapat disesuaikan via `.env`.
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-3.0+-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
+[![Firebase](https://img.shields.io/badge/Firebase-Realtime_DB-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/)
+[![OpenCV](https://img.shields.io/badge/OpenCV-4.8+-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)](https://opencv.org/)
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
-2. **Aturan Presensi Otomatis**:
-   - Pembagian status otomatis: **Hadir** (sebelum/pada batas waktu) atau **Terlambat** (melewati batas waktu).
-   - Pencegahan absensi ganda (siswa tidak dapat melakukan absensi berulang pada hari yang sama).
+**ABSENSI-AI** adalah aplikasi presensi modern untuk sekolah yang menggunakan teknologi **AI pengenalan wajah** (Face Recognition) secara real-time melalui kamera, dengan penyimpanan data berbasis **Firebase Realtime Database**.
 
-3. **Peran & Akses Pengguna (Role-Based)**:
-   - **Siswa**:
-     - Login menggunakan NIS atau username.
-     - Dashboard status kehadiran hari ini.
-     - Presensi mandiri via kamera webcam laptop/komputer.
-     - Riwayat kehadiran pribadi.
-   - **Admin**:
-     - Dashboard statistik harian (Total Siswa, Hadir, Terlambat, Izin, Sakit, Alpa).
-     - Grafik tren kehadiran 7 hari, distribusi status, dan rekap per kelas (Chart.js).
-     - Manajemen siswa lengkap (Tambah, Edit, Hapus/Nonaktifkan).
-     - Pendaftaran sampel wajah siswa (3 sampel: lurus, senyum, sudut berbeda) beserta fitur uji kamera live.
-     - Laporan presensi lengkap dengan filter tanggal, kelas, nama/NIS, dan status.
-     - Ekspor laporan ke format **CSV** dan **Excel (.xlsx)**.
-     - Input presensi manual untuk izin, sakit, dan alpa.
-
-4. **Integrasi Firebase Realtime Database**:
-   - Backend terhubung melalui **Firebase Admin SDK**.
-   - Dilengkapi aturan keamanan role-based (`database.rules.json`).
-   - Mode transisi / buffer otomatis jika `serviceAccountKey.json` belum diunggah sehingga aplikasi tetap dapat langsung dijalankan dan diuji.
+</div>
 
 ---
 
-## 📁 Struktur Direktori
+## ✨ Fitur Utama
 
-```text
-ABSENSI AI RAYA/
-├── app.py                     # Entry point server Flask
-├── config.py                  # Konfigurasi aplikasi & environment
-├── database.rules.json        # Firebase Realtime Database Security Rules
-├── requirements.txt           # Dependensi Python
-├── .env                       # File konfigurasi lokal
-├── .env.example               # Template environment variable
-├── .gitignore
-├── firebase/
-│   ├── __init__.py
-│   └── firebase_config.py     # Konektor & handler Firebase Realtime Database
-├── ai/
-│   ├── __init__.py
-│   ├── face_detector.py       # OpenCV YuNet & Haar Cascade Detector
-│   ├── face_recognition.py    # OpenCV SFace 128D Embedding Recognizer
-│   ├── face_utils.py          # Utilitas gambar, base64 & liveness check
-│   └── models/
-│       ├── face_detection_yunet_2023mar.onnx
-│       └── face_recognition_sface_2021dec.onnx
-├── routes/
-│   ├── __init__.py
-│   ├── auth.py                # Autentikasi & kontrol sesi
-│   ├── attendance.py          # Presensi wajah & check-in AI
-│   ├── students.py            # Manajemen data siswa
-│   └── reports.py             # Laporan, statistik & ekspor CSV/Excel
-├── templates/
-│   ├── base.html              # Layout master & navbar
-│   ├── login.html             # Halaman login modern
-│   ├── siswa/
-│   │   ├── dashboard.html     # Dashboard siswa & status harian
-│   │   ├── attendance.html    # Halaman scan wajah AI
-│   │   └── history.html       # Riwayat kehadiran siswa
-│   └── admin/
-│       ├── dashboard.html     # Dashboard analytics & grafik admin
-│       ├── students.html      # Kelola data siswa
-│       ├── face_registration.html # Pendaftaran wajah & uji kamera
-│       └── reports.html       # Laporan, filter & ekspor data
-├── static/
-│   ├── css/style.css          # Tema modern bernuansa sekolah
-│   ├── js/
-│   │   ├── camera.js          # Web API kamera browser
-│   │   ├── attendance.js      # Client check-in AI & feedback audio
-│   │   └── dashboard.js       # Jam digital & format tanggal
-│   └── images/
-│       └── logo.svg           # Logo vektor aplikasi
-└── README.md
+| Fitur | Deskripsi |
+|-------|-----------|
+| 🤖 **Face Recognition AI** | Pengenalan wajah real-time menggunakan model SFace 128-dimensi (OpenCV Zoo) |
+| 📷 **Registrasi Wajah** | Admin dapat mendaftarkan wajah siswa langsung melalui kamera web |
+| ⏰ **Deteksi Keterlambatan** | Sistem otomatis menandai status Hadir / Terlambat berdasarkan jam yang dikonfigurasi |
+| 🔐 **Multi-Role Auth** | Sistem login terpisah untuk Admin dan Siswa |
+| 📊 **Dashboard Analitik** | Dashboard real-time untuk admin dan siswa |
+| 📄 **Laporan Excel** | Export laporan kehadiran ke format `.xlsx` menggunakan openpyxl |
+| ☁️ **Firebase Realtime** | Semua data tersinkronisasi secara real-time via Firebase |
+| 🌐 **Antarmuka Responsif** | Tampilan web yang bersih dan responsif |
+
+---
+
+## 🧠 Teknologi AI
+
+Aplikasi ini menggunakan dua model **ONNX** dari [OpenCV Zoo](https://github.com/opencv/opencv_zoo):
+
+| Model | Fungsi |
+|-------|--------|
+| `face_detection_yunet_2023mar.onnx` | Deteksi lokasi wajah dalam frame kamera |
+| `face_recognition_sface_2021dec.onnx` | Ekstraksi embedding vektor 128-dimensi untuk pengenalan wajah |
+
+Kecocokan wajah dihitung menggunakan **Cosine Similarity**. Model diunduh otomatis saat pertama kali dijalankan jika belum tersedia.
+
+---
+
+## 🗂️ Struktur Proyek
+
+```
+ABSENSI-AI/
+├── app.py                      # Entry point aplikasi Flask
+├── config.py                   # Konfigurasi aplikasi (env vars)
+├── requirements.txt            # Dependensi Python
+├── database.rules.json         # Aturan keamanan Firebase
+├── .env.example                # Contoh file konfigurasi environment
+│
+├── ai/                         # Modul Kecerdasan Buatan
+│   ├── face_detector.py        # Deteksi wajah (YuNet)
+│   ├── face_recognition.py     # Pengenalan & pencocokan wajah (SFace)
+│   ├── face_utils.py           # Utilitas: cosine similarity, liveness
+│   └── models/                 # Model ONNX (diunduh otomatis / tidak di-commit)
+│
+├── firebase/                   # Modul Koneksi Firebase
+│   └── firebase_config.py      # Inisialisasi Firebase Admin SDK
+│
+├── routes/                     # Blueprint Rute Flask
+│   ├── auth.py                 # Login, logout, dekorator role
+│   ├── attendance.py           # API absensi & pengenalan wajah
+│   ├── students.py             # CRUD data siswa & registrasi wajah
+│   └── reports.py              # Laporan & export Excel
+│
+├── templates/                  # Template HTML (Jinja2)
+│   ├── base.html               # Layout utama
+│   ├── login.html              # Halaman login
+│   ├── admin/                  # Halaman khusus Admin
+│   │   ├── dashboard.html
+│   │   ├── students.html
+│   │   ├── face_registration.html
+│   │   └── reports.html
+│   └── siswa/                  # Halaman khusus Siswa
+│       ├── dashboard.html
+│       ├── attendance.html
+│       └── history.html
+│
+└── static/                     # Aset Statis
+    ├── css/style.css           # Stylesheet
+    ├── js/                     # JavaScript (kamera, absensi, dashboard)
+    └── images/logo.svg         # Logo aplikasi
 ```
 
 ---
 
-## 🚀 Panduan Instalasi & Menjalankan Aplikasi
+## ⚙️ Instalasi & Menjalankan
 
-### 1. Persyaratan Sistem
-- Python versi 3.10 atau 3.11.
-- Webcam / kamera laptop yang berfungsi.
-- Browser modern (Google Chrome, Microsoft Edge, atau Mozilla Firefox).
+### Prasyarat
 
-### 2. Membuat Virtual Environment
+- **Python 3.11+**
+- **Git**
+- Akun **Firebase** dengan proyek aktif
+- **Service Account Key** dari Firebase Console
 
-Buka Command Prompt atau PowerShell di folder project:
+### 1. Clone Repositori
 
 ```bash
-python -m venv venv
+git clone https://github.com/ainformatika35-dev/ABSENSI-AI.git
+cd ABSENSI-AI
 ```
 
-Aktifkan virtual environment:
-- **Windows (PowerShell)**:
-  ```powershell
-  .\venv\Scripts\Activate.ps1
-  ```
-- **Windows (Command Prompt)**:
-  ```cmd
-  venv\Scripts\activate.bat
-  ```
+### 2. Buat & Aktifkan Virtual Environment
 
-### 3. Menginstall Dependensi
+```bash
+# Windows
+python -m venv venv
+venv\Scripts\activate
+
+# Linux / macOS
+python3 -m venv venv
+source venv/bin/activate
+```
+
+### 3. Install Dependensi
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Konfigurasi Environment (`.env`)
+### 4. Konfigurasi Environment
 
-File `.env` sudah disediakan secara otomatis. Anda dapat menyesuaikan konfigurasi sesuai kebutuhan:
+Salin file `.env.example` menjadi `.env` dan sesuaikan nilainya:
+
+```bash
+cp .env.example .env
+```
+
+Isi file `.env`:
 
 ```env
-FLASK_SECRET_KEY=absensi_ai_super_secret_key_2026_xyz
+# Flask
+FLASK_SECRET_KEY=ganti_dengan_kunci_rahasia_anda
+DEBUG=True
 PORT=5000
 HOST=0.0.0.0
 
-# Firebase Database URL
-FIREBASE_DATABASE_URL=https://absensi-ai-6cced-default-rtdb.firebaseio.com/
+# Firebase
+FIREBASE_DATABASE_URL=https://<project-id>-default-rtdb.firebaseio.com/
 FIREBASE_CREDENTIALS_PATH=serviceAccountKey.json
 
-# Ambang batas kemiripan wajah (0.0 - 1.0)
+# Pengenalan Wajah
 FACE_RECOGNITION_THRESHOLD=0.50
 
-# Aturan batas waktu presensi
+# Jam Absensi
 ATTENDANCE_START_TIME=07:00
 ATTENDANCE_LATE_TIME=07:15
 ```
 
-### 5. Memasukkan Firebase Service Account
+### 5. Setup Firebase
 
-1. Buka [Firebase Console](https://console.firebase.google.com/project/absensi-ai-6cced).
-2. Masuk ke **Project Settings** (ikon gerigi) > tab **Service accounts**.
-3. Klik tombol **Generate new private key** dan simpan file JSON tersebut.
-4. Ubah nama file tersebut menjadi `serviceAccountKey.json` dan letakkan di **root folder project** (sejajar dengan `app.py`).
+1. Buka [Firebase Console](https://console.firebase.google.com/) → pilih proyek Anda
+2. Masuk ke **Project Settings** → **Service Accounts** → **Generate new private key**
+3. Simpan file yang diunduh sebagai `serviceAccountKey.json` di root proyek
+4. Aktifkan **Realtime Database** di Firebase Console
+5. Terapkan aturan keamanan dari file `database.rules.json`
 
-> *Catatan:* Jika file tersebut belum diletakkan, aplikasi tetap berjalan dalam mode transisi lokal agar Anda dapat menguji seluruh fungsi tanpa hambatan.
+> ⚠️ **PENTING:** Jangan pernah commit file `serviceAccountKey.json` atau `.env` ke repositori publik!
 
-### 6. Menjalankan Aplikasi
+### 6. Jalankan Aplikasi
 
 ```bash
 python app.py
 ```
 
-Buka browser dan akses:
+Akses aplikasi di browser: **[http://localhost:5000](http://localhost:5000)**
+
+---
+
+## 🔑 Akun Default
+
+| Role | Username / NIS | Password |
+|------|----------------|----------|
+| **Admin** | `admin` | `admin123` |
+| **Siswa** | `1001` | `siswa123` |
+
+> 💡 Ubah password default segera setelah login pertama.
+
+---
+
+## 📱 Alur Penggunaan
+
 ```
-http://localhost:5000
+[Admin Login]
+    │
+    ├── Tambah Data Siswa (Nama, NIS, Kelas)
+    │
+    ├── Registrasi Wajah Siswa (via Kamera)
+    │       └── Sistem simpan embedding 128D ke Firebase
+    │
+    └── Monitor Dashboard (Statistik Kehadiran)
+            └── Export Laporan ke Excel
+
+[Siswa Login]
+    │
+    ├── Lakukan Absensi (via Kamera)
+    │       └── AI cocokkan wajah → catat Hadir / Terlambat
+    │
+    └── Lihat Riwayat Kehadiran Pribadi
 ```
 
 ---
 
-## 🔑 Akun Bawaan Sistem (Demo)
+## 🚦 Status Kehadiran
 
-Sistem telah menyediakan akun awal secara otomatis:
-
-| Role | Username / NIS | Password | Keterangan |
-|---|---|---|---|
-| **Admin** | `admin` | `admin123` | Akses penuh dashboard, siswa, pendaftaran wajah, dan laporan |
-| **Siswa** | `1001` | `siswa123` | Akun Siswa: Budi Santoso (XI IPA 1) |
-| **Siswa** | `1002` | `siswa123` | Akun Siswa: Siti Nurhaliza (XI IPS 1) |
-| **Siswa** | `1003` | `siswa123` | Akun Siswa: Ahmad Fauzi (XI IPA 2) |
+| Status | Kondisi |
+|--------|---------|
+| ✅ **Hadir** | Check-in sebelum batas waktu terlambat (`ATTENDANCE_LATE_TIME`) |
+| ⚠️ **Terlambat** | Check-in setelah batas waktu terlambat |
+| ❌ **Tidak Hadir** | Tidak ada check-in sama sekali |
 
 ---
 
-## 📖 Alur Penggunaan Aplikasi
+## 🔧 Konfigurasi Lanjutan
 
-### A. Pendaftaran Wajah Siswa (Admin)
-1. Login sebagai Admin (`admin` / `admin123`).
-2. Masuk ke menu **Daftar Wajah** (`/admin/face-registration`).
-3. Pilih siswa pada dropdown.
-4. Izinkan browser mengakses kamera.
-5. Posisikan wajah siswa di dalam oval pemandu.
-6. Klik tombol **Ambil Foto Sampel** sebanyak 3 kali (posisi netral, senyum, sedikit sudut berbeda).
-7. Klik **Simpan ke Firebase Database**. Sistem AI akan mengekstrak vektor embedding 128-dimensi dan menyimpannya.
-8. Gunakan tombol **Uji Kamera** untuk memastikan sistem mengenali wajah siswa tersebut secara akurat.
+### Threshold Pengenalan Wajah
 
-### B. Melakukan Presensi Wajah (Siswa)
-1. Login sebagai Siswa (misal `1001` / `siswa123`).
-2. Di halaman Dashboard Siswa, klik tombol **ABSENSI SEKARANG** (`/siswa/attendance`).
-3. Berdiri/duduk tegak menghadap webcam.
-4. Klik **Scan & Verifikasi Wajah**.
-5. Sistem AI backend akan mendeteksi wajah, mencocokkan embedding, menentukan status (*Hadir* jika <= 07:15, *Terlambat* jika > 07:15), dan menyimpan presensi ke Firebase.
-6. Notifikasi berhasil dan bunyi konfirmasi akan muncul. Siswa tidak dapat absen lagi pada hari yang sama.
+Nilai `FACE_RECOGNITION_THRESHOLD` (0.0 – 1.0) mengontrol tingkat keketatan pengenalan:
 
-### C. Melihat & Mengekspor Laporan (Admin)
-1. Buka menu **Laporan** (`/admin/reports`).
-2. Gunakan saringan berdasarkan tanggal mulai, tanggal akhir, kelas, nama/NIS, atau status kehadiran.
-3. Klik tombol **Export CSV** untuk mengunduh laporan format `.csv`.
-4. Klik tombol **Export Excel** untuk mengunduh laporan format `.xlsx` dengan format tabel rapi.
+- **0.4** → Ketat (hanya cocok jika sangat mirip)
+- **0.5** → Seimbang *(default)*
+- **0.6** → Longgar (lebih mudah cocok)
 
-### D. Menjalankan di Jaringan Lokal (Komputer / Laptop Sekolah)
-Aplikasi sudah diset untuk mendengarkan host `0.0.0.0`.
-Untuk membukanya dari komputer lain yang terhubung ke satu jaringan Wi-Fi/LAN sekolah:
-1. Temukan IP lokal laptop server (misal melalui perintah `ipconfig`, contoh: `192.168.1.15`).
-2. Buka browser di komputer lain dengan alamat: `http://192.168.1.15:5000`.
+### Model AI
+
+Model ONNX akan **diunduh otomatis** dari OpenCV Zoo saat pertama dijalankan jika belum ada di folder `ai/models/`. Untuk instalasi offline, unduh secara manual:
+
+- [YuNet (Deteksi)](https://github.com/opencv/opencv_zoo/tree/main/models/face_detection_yunet)
+- [SFace (Pengenalan)](https://github.com/opencv/opencv_zoo/tree/main/models/face_recognition_sface)
 
 ---
 
-## 🔒 Keamanan & Kebijakan
-- Password disimpan menggunakan hashing `scrypt` / `pbkdf2` via Werkzeug Security (tidak ada plaintext).
-- Foto mentah tidak disimpan ke database untuk menjaga privasi; hanya representasi matematis embedding wajah yang disimpan.
-- Validasi identitas siswa diproses murni dari algoritma pengenalan wajah di server backend.
+## 📦 Dependensi
+
+| Library | Versi Minimum | Fungsi |
+|---------|---------------|--------|
+| `Flask` | 3.0.0 | Web framework |
+| `firebase-admin` | 6.5.0 | Koneksi Firebase (Admin SDK) |
+| `opencv-python` | 4.8.0 | Pemrosesan gambar & AI |
+| `numpy` | 1.24.0 | Komputasi numerik |
+| `python-dotenv` | 1.0.0 | Manajemen environment variables |
+| `openpyxl` | 3.1.0 | Export laporan Excel |
+| `Pillow` | 10.0.0 | Manipulasi gambar |
+| `requests` | 2.31.0 | HTTP client |
+| `Werkzeug` | 3.0.0 | Utilitas WSGI Flask |
+
+---
+
+## 🤝 Kontribusi
+
+Kontribusi sangat disambut! Silakan ikuti langkah berikut:
+
+1. **Fork** repositori ini
+2. Buat branch fitur baru: `git checkout -b fitur/nama-fitur`
+3. Commit perubahan: `git commit -m 'feat: tambah fitur X'`
+4. Push ke branch: `git push origin fitur/nama-fitur`
+5. Buat **Pull Request**
+
+---
+
+## 📜 Lisensi
+
+Proyek ini dilisensikan di bawah **MIT License** — bebas digunakan, dimodifikasi, dan didistribusikan.
+
+---
+
+<div align="center">
+
+Dibuat dengan ❤️ oleh **ainformatika35-dev**
+
+⭐ Jangan lupa beri bintang jika proyek ini bermanfaat!
+
+</div>
